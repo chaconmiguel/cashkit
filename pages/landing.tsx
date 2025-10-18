@@ -80,47 +80,6 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Scroll tracking for engagement events
-  useEffect(() => {
-    const scrollTracker = {
-      25: false,
-      50: false,
-      75: false,
-      90: false
-    };
-
-    const handleScroll = () => {
-      const scrollPercent = Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100);
-      
-      Object.keys(scrollTracker).forEach(threshold => {
-        const thresholdNum = parseInt(threshold);
-        if (scrollPercent >= thresholdNum && !scrollTracker[thresholdNum as keyof typeof scrollTracker]) {
-          scrollTracker[thresholdNum as keyof typeof scrollTracker] = true;
-          
-          // Track Facebook Pixel ViewContent events
-          if (typeof window !== 'undefined' && (window as any).fbq) {
-            (window as any).fbq('track', 'ViewContent', {
-              content_name: `CashKit Landing Page - ${threshold}% Scroll`,
-              content_category: 'Engagement'
-            });
-          }
-          
-          // Track Google Analytics scroll events
-          if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'scroll', {
-              event_category: 'engagement',
-              event_label: `${threshold}% scroll`,
-              value: thresholdNum
-            });
-          }
-        }
-      });
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   // Split text into lines for typing effect
   const renderTypingText = () => {
     const words = typingText.split(' ');
@@ -161,61 +120,8 @@ export default function LandingPage() {
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     setCheckoutError(null);
-    
-    // Generate unique event ID for deduplication
-    const eventId = `checkout_${Date.now()}`;
-    
-    // Track InitiateCheckout event for Facebook Pixel (browser-side)
-    if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('track', 'InitiateCheckout', {
-        value: 44.00,
-        currency: 'USD',
-        content_name: 'CashKit PLR Bundle',
-        content_category: 'Digital Products'
-      }, {
-        eventID: eventId  // Use same event ID for deduplication
-      });
-    }
-    
-    // Track for Google Analytics
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'begin_checkout', {
-        currency: 'USD',
-        value: 44.00,
-        items: [{
-          item_id: 'cashkit_plr_bundle',
-          item_name: 'CashKit PLR Bundle',
-          category: 'Digital Products',
-          quantity: 1,
-          price: 44.00
-        }]
-      });
-    }
-    
-    // Send server-side InitiateCheckout event to Facebook Conversions API
     try {
-      await fetch("/api/track-initiate-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_id: eventId,
-          event_source_url: window.location.href
-        })
-      });
-    } catch (err) {
-      console.error('Failed to track InitiateCheckout on server:', err);
-      // Don't block checkout if tracking fails
-    }
-    
-    try {
-      const res = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_id: eventId,
-          event_source_url: window.location.href
-        })
-      });
+      const res = await fetch("/api/create-checkout-session", { method: "POST" });
       if (!res.ok) throw new Error("Failed to create checkout session");
       const data = (await res.json()) as { url?: string; error?: string };
       if (data.url) {
@@ -238,44 +144,6 @@ export default function LandingPage() {
         <meta name="description" content="Launch a high-converting funnel with 1,000+ PLR PDFs and 30,000+ creator assets" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.ico" />
-        
-        {/* Google Analytics 4 - Replace YOUR_GA4_ID with your actual GA4 measurement ID */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_GA4_ID"></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'YOUR_GA4_ID', {
-                page_title: 'CashKit Landing Page',
-                page_location: window.location.href
-              });
-            `
-          }}
-        />
-
-        {/* Facebook Pixel */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '4078333462420336');
-              fbq('track', 'PageView');
-            `
-          }}
-        />
-        <noscript>
-          <img height="1" width="1" style={{display: 'none'}}
-               src="https://www.facebook.com/tr?id=4078333462420336&ev=PageView&noscript=1" />
-        </noscript>
       </Head>
       
       {/* Floating Background Elements - REMOVED */}
